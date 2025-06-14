@@ -1,0 +1,25 @@
+# MineShell Configuration
+webpanelname: "MineShell"
+port: 3000
+admin:
+  username: "admin"
+  password: "mineshell123"
+  
+# Trusted IPs for auto-login (optional)
+trusted_ips:
+  - "127.0.0.1"
+  - "::1"
+
+# JWT Secret (change this in production)
+jwt_secret: "your-super-secret-jwt-key-change-this-in-production"
+
+# Server defaults
+defaults:
+  java_path: "java"
+  min_ram: "1G"
+  max_ram: "2G"
+  
+# File upload limits
+upload:
+  max_file_size: "500MB"
+  allowed_extensions: [".jar", ".zip", ".txt", ".yml", ".yaml", ".json", ".properties"]

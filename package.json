@@ -1,0 +1,21 @@
+{
+  "name": "mineshell",
+  "version": "1.0.0",
+  "description": "Modern Minecraft server management panel",
+  "main": "backend/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && node server.js",
+    "frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && node server.js",
+    "install-deps": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "devDependencies": {},
+  "keywords": ["minecraft", "server", "management", "panel"],
+  "author": "MineShell",
+  "license": "MIT"
+}
