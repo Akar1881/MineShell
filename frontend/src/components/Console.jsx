@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Send } from 'lucide-react'
 
-const Console = ({ serverId }) => {
+const Console = ({ serverId, onStatusChange }) => {
   const [output, setOutput] = useState([])
   const [command, setCommand] = useState('')
   const [ws, setWs] = useState(null)
   const [connected, setConnected] = useState(false)
+  const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const outputRef = useRef(null)
   const { token } = useAuth()
 
@@ -15,12 +16,13 @@ const Console = ({ serverId }) => {
 
     // Create WebSocket connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.host}`
+    const wsUrl = `${protocol}//${window.location.host}/ws`
     const websocket = new WebSocket(wsUrl)
 
     websocket.onopen = () => {
       console.log('WebSocket connected')
       setConnected(true)
+      setReconnectAttempt(0)
       
       // Authenticate
       websocket.send(JSON.stringify({
@@ -30,36 +32,56 @@ const Console = ({ serverId }) => {
     }
 
     websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      
-      switch (data.type) {
-        case 'auth_success':
-          // Subscribe to console output for this server
-          websocket.send(JSON.stringify({
-            type: 'subscribe_console',
-            serverId
-          }))
-          break
-          
-        case 'console_output':
-          if (data.serverId === serverId) {
-            setOutput(prev => [...prev, {
-              timestamp: new Date(),
-              text: data.output
-            }])
-          }
-          break
-          
-        case 'auth_failed':
-          console.error('WebSocket authentication failed')
-          setConnected(false)
-          break
+      try {
+        const data = JSON.parse(event.data)
+        console.log('WebSocket message received:', data)
+        
+        switch (data.type) {
+          case 'auth_success':
+            // Subscribe to console output for this server
+            websocket.send(JSON.stringify({
+              type: 'subscribe_console',
+              serverId
+            }))
+            break
+            
+          case 'console_output':
+            if (data.serverId === serverId) {
+              setOutput(prev => [...prev, {
+                timestamp: new Date(),
+                text: data.output
+              }])
+
+              // Update server status based on console messages
+              if (data.output.includes('Stopping the server')) {
+                onStatusChange('stopping')
+              } else if (data.output.includes('Server stopped')) {
+                onStatusChange('stopped')
+              }
+            }
+            break
+            
+          case 'auth_failed':
+            console.error('WebSocket authentication failed')
+            setConnected(false)
+            websocket.close()
+            break
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error)
       }
     }
 
     websocket.onclose = () => {
       console.log('WebSocket disconnected')
       setConnected(false)
+      
+      // Attempt to reconnect after a delay
+      if (reconnectAttempt < 5) {
+        setTimeout(() => {
+          setReconnectAttempt(prev => prev + 1)
+        }, 3000)
+      }
     }
 
     websocket.onerror = (error) => {
@@ -72,7 +94,7 @@ const Console = ({ serverId }) => {
     return () => {
       websocket.close()
     }
-  }, [token, serverId])
+  }, [token, serverId, reconnectAttempt])
 
   useEffect(() => {
     // Auto-scroll to bottom when new output is added

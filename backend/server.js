@@ -17,15 +17,26 @@ const config = YAML.load('./config.yaml');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ 
+  server,
+  path: '/ws',
+  verifyClient: (info, callback) => {
+    const origin = info.origin || info.req.headers.origin;
+    if (origin === 'http://localhost:3000' || origin === 'http://localhost:5173') {
+      callback(true);
+    } else {
+      callback(false, 403, 'Forbidden');
+    }
+  }
+});
 
 // Middleware
 app.use(compression());
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// Serve static files from frontend build
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  credentials: true
+}));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Create necessary directories
@@ -51,6 +62,7 @@ wss.on('connection', (ws, req) => {
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
+      console.log('WebSocket message received:', data);
       
       switch (data.type) {
         case 'auth':
@@ -59,20 +71,24 @@ wss.on('connection', (ws, req) => {
           if (isValid) {
             ws.authenticated = true;
             ws.send(JSON.stringify({ type: 'auth_success' }));
+            console.log('WebSocket authentication successful');
           } else {
             ws.send(JSON.stringify({ type: 'auth_failed' }));
+            console.log('WebSocket authentication failed');
             ws.close();
           }
           break;
           
         case 'console_command':
           if (ws.authenticated && data.serverId && data.command) {
+            console.log(`Sending command to server ${data.serverId}: ${data.command}`);
             mcControl.sendCommand(data.serverId, data.command);
           }
           break;
           
         case 'subscribe_console':
           if (ws.authenticated && data.serverId) {
+            console.log(`Client subscribed to server ${data.serverId} console`);
             wsConnections.set(ws, data.serverId);
           }
           break;
@@ -86,17 +102,28 @@ wss.on('connection', (ws, req) => {
     wsConnections.delete(ws);
     console.log('WebSocket connection closed');
   });
+
+  ws.on('error', (error) => {
+    console.error('WebSocket error:', error);
+    wsConnections.delete(ws);
+  });
 });
 
 // Broadcast console output to connected clients
 const broadcastConsoleOutput = (serverId, output) => {
+  console.log(`Broadcasting to server ${serverId}:`, output);
   wsConnections.forEach((subscribedServerId, ws) => {
     if (subscribedServerId === serverId && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'console_output',
-        serverId,
-        output
-      }));
+      try {
+        ws.send(JSON.stringify({
+          type: 'console_output',
+          serverId,
+          output
+        }));
+      } catch (error) {
+        console.error('Error broadcasting to client:', error);
+        wsConnections.delete(ws);
+      }
     }
   });
 };

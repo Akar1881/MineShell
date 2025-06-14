@@ -1,41 +1,39 @@
-[23:09:46] [ServerMain/INFO]: Environment: authHost='https://authserver.mojang.com', accountsHost='https://api.mojang.com', sessionHost='https://sessionserver.mojang.com', servicesHost='https://api.minecraftservices.com', name='PROD'
-[23:09:46] [ServerMain/INFO]: Found new data pack file/bukkit, loading it automatically
-[23:09:47] [ServerMain/INFO]: Reloading ResourceManager: Default, bukkit
-[23:09:49] [Worker-Main-1/INFO]: Loaded 7 recipes
-[23:09:52] [Server thread/INFO]: Starting minecraft server version 1.18
-[23:09:52] [Server thread/INFO]: Loading properties
-[23:09:53] [Server thread/INFO]: This server is running Paper version git-Paper-66 (MC: 1.18) (Implementing API version 1.18-R0.1-SNAPSHOT) (Git: dce79f3)
-[23:09:53] [Server thread/INFO]: Server Ping Player Sample Count: 12
-[23:09:53] [Server thread/INFO]: Using 4 threads for Netty based IO
-[23:09:53] [Server thread/INFO]: Default game type: SURVIVAL
-[23:09:53] [Server thread/INFO]: Generating keypair
-[23:09:53] [Server thread/INFO]: Starting Minecraft server on *:25565
-[23:09:53] [Server thread/INFO]: Using default channel type
-[23:09:53] [Server thread/INFO]: Paper: Using Java 11 compression from Velocity.
-[23:09:53] [Server thread/INFO]: Paper: Using Java cipher from Velocity.
-[23:09:54] [Server thread/INFO]: Preparing level "world"
-[23:10:27] [Server thread/INFO]: Preparing start region for dimension minecraft:overworld
-[23:10:28] [Worker-Main-1/INFO]: Preparing spawn area: 0%
-[23:10:28] [Worker-Main-1/INFO]: Preparing spawn area: 0%
-[23:10:28] [Server thread/INFO]: Time elapsed: 802 ms
-[23:10:28] [Server thread/INFO]: Preparing start region for dimension minecraft:the_nether
-[23:10:29] [Server thread/INFO]: Time elapsed: 796 ms
-[23:10:29] [Server thread/INFO]: Preparing start region for dimension minecraft:the_end
-[23:10:29] [Server thread/INFO]: Time elapsed: 742 ms
-[23:10:29] [Server thread/INFO]: Running delayed init tasks
-[23:10:29] [Server thread/INFO]: Done (37.108s)! For help, type "help"
-[23:10:29] [Server thread/INFO]: Timings Reset
-[23:10:39] [Server thread/INFO]: Stopping the server
-[23:10:39] [Server thread/INFO]: Stopping server
-[23:10:39] [Server thread/INFO]: Saving players
-[23:10:39] [Server thread/INFO]: Saving worlds
-[23:10:39] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
-[23:11:40] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_nether]'/minecraft:the_nether
-[23:12:10] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_the_end]'/minecraft:the_end
-[23:12:31] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
-[23:12:31] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
-[23:12:31] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
-[23:12:31] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
-[23:12:31] [Server thread/INFO]: Flushing Chunk IO
-[23:12:31] [Server thread/INFO]: Closing Thread Pool
-[23:12:31] [Server thread/INFO]: Closing Server
+[23:56:19] [ServerMain/INFO]: Environment: authHost='https://authserver.mojang.com', accountsHost='https://api.mojang.com', sessionHost='https://sessionserver.mojang.com', servicesHost='https://api.minecraftservices.com', name='PROD'
+[23:56:21] [ServerMain/INFO]: Reloading ResourceManager: Default, bukkit
+[23:56:23] [Worker-Main-1/INFO]: Loaded 7 recipes
+[23:56:26] [Server thread/INFO]: Starting minecraft server version 1.18
+[23:56:26] [Server thread/INFO]: Loading properties
+[23:56:26] [Server thread/INFO]: This server is running Paper version git-Paper-66 (MC: 1.18) (Implementing API version 1.18-R0.1-SNAPSHOT) (Git: dce79f3)
+[23:56:26] [Server thread/INFO]: Server Ping Player Sample Count: 12
+[23:56:26] [Server thread/INFO]: Using 4 threads for Netty based IO
+[23:56:27] [Server thread/INFO]: Default game type: SURVIVAL
+[23:56:27] [Server thread/INFO]: Generating keypair
+[23:56:27] [Server thread/INFO]: Starting Minecraft server on *:25565
+[23:56:27] [Server thread/INFO]: Using default channel type
+[23:56:27] [Server thread/INFO]: Paper: Using Java 11 compression from Velocity.
+[23:56:27] [Server thread/INFO]: Paper: Using Java cipher from Velocity.
+[23:56:27] [Server thread/INFO]: Server permissions file permissions.yml is empty, ignoring it
+[23:56:27] [Server thread/INFO]: Preparing level "world"
+[23:56:30] [Server thread/INFO]: Preparing start region for dimension minecraft:overworld
+[23:56:30] [Server thread/INFO]: Time elapsed: 388 ms
+[23:56:30] [Server thread/INFO]: Preparing start region for dimension minecraft:the_nether
+[23:56:31] [Server thread/INFO]: Time elapsed: 502 ms
+[23:56:31] [Server thread/INFO]: Preparing start region for dimension minecraft:the_end
+[23:56:31] [Server thread/INFO]: Time elapsed: 167 ms
+[23:56:31] [Server thread/INFO]: Running delayed init tasks
+[23:56:31] [Server thread/INFO]: Done (5.082s)! For help, type "help"
+[23:56:31] [Server thread/INFO]: Timings Reset
+[23:57:01] [Server thread/INFO]: Stopping the server
+[23:57:01] [Server thread/INFO]: Stopping server
+[23:57:01] [Server thread/INFO]: Saving players
+[23:57:01] [Server thread/INFO]: Saving worlds
+[23:57:01] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[23:57:52] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_nether]'/minecraft:the_nether
+[23:58:07] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_the_end]'/minecraft:the_end
+[23:58:10] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[23:58:10] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[23:58:10] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[23:58:10] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
+[23:58:11] [Server thread/INFO]: Flushing Chunk IO
+[23:58:11] [Server thread/INFO]: Closing Thread Pool
+[23:58:11] [Server thread/INFO]: Closing Server

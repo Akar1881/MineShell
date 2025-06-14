@@ -38,6 +38,13 @@ const ServerDetail = () => {
     }
   }
 
+  const handleStatusChange = (newStatus) => {
+    setServer(prev => ({
+      ...prev,
+      status: newStatus
+    }))
+  }
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'running':
@@ -152,7 +159,12 @@ const ServerDetail = () => {
 
       {/* Tab Content */}
       <div className="min-h-[600px]">
-        {activeTab === 'console' && <Console serverId={id} />}
+        {activeTab === 'console' && (
+          <Console 
+            serverId={id} 
+            onStatusChange={handleStatusChange}
+          />
+        )}
         {activeTab === 'files' && <FileManager serverId={id} />}
         {activeTab === 'settings' && (
           <div className="card">

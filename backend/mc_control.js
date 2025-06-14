@@ -216,21 +216,50 @@ router.post('/:id/stop', async (req, res) => {
   try {
     const serverId = req.params.id;
     const server = runningServers.get(serverId);
+    const forceStop = req.query.force === 'true';
     
     if (!server) {
       return res.status(404).json({ success: false, message: 'Server is not running' });
     }
     
-    // Send stop command
+    if (forceStop) {
+      // Force stop - kill immediately
+      server.process.kill('SIGKILL');
+      runningServers.delete(serverId);
+      if (broadcastFunction) {
+        broadcastFunction(serverId, 'Server force stopped\n');
+      }
+      return res.json({ success: true, message: 'Server force stopped' });
+    }
+    
+    // Normal stop - try graceful shutdown first
     server.process.stdin.write('stop\n');
     
     // Set a timeout for graceful shutdown
     const timeout = setTimeout(() => {
       if (runningServers.has(serverId)) {
         console.log(`[${serverId}] Force stopping server after timeout`);
-        server.process.kill('SIGKILL');
+        const server = runningServers.get(serverId);
+        if (server) {
+          // Try SIGTERM first for cleaner shutdown
+          server.process.kill('SIGTERM');
+          
+          // If still running after 5 seconds, use SIGKILL
+          setTimeout(() => {
+            if (runningServers.has(serverId)) {
+              const server = runningServers.get(serverId);
+              if (server) {
+                server.process.kill('SIGKILL');
+                runningServers.delete(serverId);
+                if (broadcastFunction) {
+                  broadcastFunction(serverId, 'Server force killed\n');
+                }
+              }
+            }
+          }, 5000);
+        }
       }
-    }, 30000); // 30 seconds timeout
+    }, 30000); // 30 seconds for normal shutdown
     
     // Wait for process to exit
     server.process.once('close', () => {
@@ -241,7 +270,11 @@ router.post('/:id/stop', async (req, res) => {
       }
     });
     
-    res.json({ success: true, message: 'Stopping server...' });
+    res.json({ 
+      success: true, 
+      message: 'Server stop command sent',
+      note: 'Server is saving chunks and worlds. This may take a few minutes.'
+    });
   } catch (error) {
     console.error('Error stopping server:', error);
     res.status(500).json({ success: false, message: 'Failed to stop server' });
