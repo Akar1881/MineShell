@@ -9,7 +9,8 @@
     "react-router-dom": "^6.8.1",
     "axios": "^1.6.2",
     "lucide-react": "^0.294.0",
-    "@headlessui/react": "^1.7.17"
+    "@headlessui/react": "^1.7.17",
+    "yamljs": "^0.3.0"
   },
   "scripts": {
     "dev": "vite",

@@ -1,0 +1,22 @@
+# MineShell Configuration
+version: "1.0.0"
+
+# Server Configuration
+server:
+  backend:
+    port: 3000
+    host: "0.0.0.0"  # Change to your domain or IP for production
+  frontend:
+    port: 5173
+    host: "0.0.0.0"  # Change to your domain or IP for production
+
+# API Configuration
+api:
+  base_url: "http://localhost:3000"  # Change to your domain or IP for production
+  ws_url: "ws://localhost:3000"      # Change to your domain or IP for production
+
+# Minecraft Server Defaults
+minecraft:
+  default_port: 25565
+  min_ram: "1G"
+  max_ram: "2G" 

@@ -265,6 +265,18 @@ router.post('/:id/stop', async (req, res) => {
     server.process.once('close', () => {
       clearTimeout(timeout);
       runningServers.delete(serverId);
+      
+      // Clear server logs
+      const logPath = path.join(__dirname, '../servers', serverId, 'logs', 'latest.log');
+      if (fs.existsSync(logPath)) {
+        try {
+          fs.writeFileSync(logPath, ''); // Clear the log file
+          console.log(`[${serverId}] Logs cleared`);
+        } catch (error) {
+          console.error(`[${serverId}] Failed to clear logs:`, error);
+        }
+      }
+      
       if (broadcastFunction) {
         broadcastFunction(serverId, 'Server stopped\n');
       }

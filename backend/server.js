@@ -13,7 +13,7 @@ const mcControl = require('./mc_control');
 const fileManager = require('./file_manager');
 
 // Load configuration
-const config = YAML.load('./config.yaml');
+const config = YAML.load(path.join(__dirname, '../config.yaml'));
 
 const app = express();
 const server = http.createServer(app);
@@ -23,7 +23,11 @@ const wss = new WebSocket.Server({
   verifyClient: (info, callback) => {
     const origin = info.origin || info.req.headers.origin;
     console.log('WebSocket connection attempt from origin:', origin);
-    if (origin === 'http://localhost:3000' || origin === 'http://localhost:5173') {
+    const allowedOrigins = [
+      `http://${config.server.frontend.host}:${config.server.frontend.port}`,
+      `http://${config.server.backend.host}:${config.server.backend.port}`
+    ];
+    if (allowedOrigins.includes(origin)) {
       callback(true);
     } else {
       console.log('WebSocket connection rejected from origin:', origin);
@@ -35,7 +39,10 @@ const wss = new WebSocket.Server({
 // Middleware
 app.use(compression());
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  origin: [
+    `http://${config.server.frontend.host}:${config.server.frontend.port}`,
+    `http://${config.server.backend.host}:${config.server.backend.port}`
+  ],
   credentials: true
 }));
 app.use(express.json());
@@ -231,10 +238,11 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-const PORT = config.port || 8080;
-server.listen(PORT, () => {
-  console.log(`🚀 ${config.webpanelname} running on port ${PORT}`);
-  console.log(`📱 Access panel at: http://localhost:${PORT}`);
+const PORT = config.server.backend.port;
+const HOST = config.server.backend.host;
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 MineShell running on ${HOST}:${PORT}`);
+  console.log(`📱 Access panel at: http://${config.server.frontend.host}:${config.server.frontend.port}`);
   console.log(`👤 Default login: ${config.admin.username} / ${config.admin.password}`);
 });
 

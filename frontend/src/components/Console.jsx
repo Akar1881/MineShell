@@ -58,6 +58,9 @@ const Console = ({ serverId, onStatusChange }) => {
                 onStatusChange('stopping')
               } else if (msg.includes('Server stopped')) {
                 onStatusChange('stopped')
+                // Clear console messages when server is stopped
+                setMessages([])
+                processedMessagesRef.current.clear()
               }
             })
           }
