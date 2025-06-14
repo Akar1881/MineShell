@@ -159,6 +159,15 @@ router.post('/:id/start', (req, res) => {
       'nogui'
     ];
     
+    // Create EULA.txt if it doesn't exist
+    const eulaPath = path.join(serverDir, 'eula.txt');
+    if (!fs.existsSync(eulaPath)) {
+      const eulaContent = `#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://account.mojang.com/documents/minecraft_eula).
+#Generated for MineShell
+eula=true`;
+      fs.writeFileSync(eulaPath, eulaContent, 'utf8');
+    }
+    
     const serverProcess = spawn('java', javaArgs, {
       cwd: serverDir,
       stdio: ['pipe', 'pipe', 'pipe']
@@ -203,27 +212,36 @@ router.post('/:id/start', (req, res) => {
 });
 
 // Stop server
-router.post('/:id/stop', (req, res) => {
+router.post('/:id/stop', async (req, res) => {
   try {
     const serverId = req.params.id;
+    const server = runningServers.get(serverId);
     
-    if (!runningServers.has(serverId)) {
-      return res.status(400).json({ success: false, message: 'Server is not running' });
+    if (!server) {
+      return res.status(404).json({ success: false, message: 'Server is not running' });
     }
     
-    const serverData = runningServers.get(serverId);
+    // Send stop command
+    server.process.stdin.write('stop\n');
     
-    // Send stop command to server
-    serverData.process.stdin.write('stop\n');
-    
-    // Force kill after 30 seconds if not stopped
-    setTimeout(() => {
+    // Set a timeout for graceful shutdown
+    const timeout = setTimeout(() => {
       if (runningServers.has(serverId)) {
-        serverData.process.kill('SIGTERM');
+        console.log(`[${serverId}] Force stopping server after timeout`);
+        server.process.kill('SIGKILL');
       }
-    }, 30000);
+    }, 30000); // 30 seconds timeout
     
-    res.json({ success: true, message: 'Stop command sent to server' });
+    // Wait for process to exit
+    server.process.once('close', () => {
+      clearTimeout(timeout);
+      runningServers.delete(serverId);
+      if (broadcastFunction) {
+        broadcastFunction(serverId, 'Server stopped\n');
+      }
+    });
+    
+    res.json({ success: true, message: 'Stopping server...' });
   } catch (error) {
     console.error('Error stopping server:', error);
     res.status(500).json({ success: false, message: 'Failed to stop server' });

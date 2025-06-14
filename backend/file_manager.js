@@ -88,6 +88,12 @@ router.get('/:serverId', (req, res) => {
           modified: itemStats.mtime,
           path: path.join(requestedPath, item).replace(/\\/g, '/')
         };
+      }).sort((a, b) => {
+        // Sort directories first, then files
+        if (a.type === 'directory' && b.type !== 'directory') return -1;
+        if (a.type !== 'directory' && b.type === 'directory') return 1;
+        // If both are same type, sort by name
+        return a.name.localeCompare(b.name);
       });
       
       res.json({
@@ -285,6 +291,31 @@ router.post('/:serverId/unzip', async (req, res) => {
   } catch (error) {
     console.error('Error extracting archive:', error);
     res.status(500).json({ success: false, message: 'Failed to extract archive' });
+  }
+});
+
+// Create EULA.txt
+router.post('/:serverId/create-eula', (req, res) => {
+  try {
+    const serverId = req.params.serverId;
+    const serverDir = path.join(__dirname, '../servers', serverId);
+    const eulaPath = path.join(serverDir, 'eula.txt');
+    
+    // Security check
+    if (!eulaPath.startsWith(serverDir)) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
+    const eulaContent = `#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://account.mojang.com/documents/minecraft_eula).
+#Generated for MineShell
+eula=true`;
+    
+    fs.writeFileSync(eulaPath, eulaContent, 'utf8');
+    
+    res.json({ success: true, message: 'EULA.txt created successfully' });
+  } catch (error) {
+    console.error('Error creating EULA.txt:', error);
+    res.status(500).json({ success: false, message: 'Failed to create EULA.txt' });
   }
 });
 

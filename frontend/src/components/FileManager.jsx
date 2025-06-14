@@ -11,8 +11,11 @@ import {
   MoreVertical,
   ArrowLeft,
   Save,
-  X
+  X,
+  Archive,
+  Check
 } from 'lucide-react'
+import FileContextMenu from './FileContextMenu'
 
 const FileManager = ({ serverId }) => {
   const [currentPath, setCurrentPath] = useState('')
@@ -21,6 +24,25 @@ const FileManager = ({ serverId }) => {
   const [editingFile, setEditingFile] = useState(null)
   const [fileContent, setFileContent] = useState('')
   const [showUpload, setShowUpload] = useState(false)
+  const [contextMenu, setContextMenu] = useState({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    item: null
+  })
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+  const [selectedItems, setSelectedItems] = useState(new Set())
+  const [isSelectMode, setIsSelectMode] = useState(false)
+  const [menuAnchor, setMenuAnchor] = useState(null)
+  const [uploadProgress, setUploadProgress] = useState(null)
+  const [uploadStatus, setUploadStatus] = useState(null)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     fetchDirectory(currentPath)
@@ -123,15 +145,34 @@ const FileManager = ({ serverId }) => {
     formData.append('path', currentPath)
 
     try {
+      setUploadStatus('uploading')
+      setUploadProgress(0)
+
       await axios.post(`/api/files/${serverId}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          setUploadProgress(percentCompleted)
         }
       })
+
+      setUploadStatus('success')
+      setTimeout(() => {
+        setUploadStatus(null)
+        setUploadProgress(null)
+      }, 2000)
+
       fetchDirectory(currentPath)
       setShowUpload(false)
     } catch (error) {
       console.error('Error uploading file:', error)
+      setUploadStatus('error')
+      setTimeout(() => {
+        setUploadStatus(null)
+        setUploadProgress(null)
+      }, 3000)
     }
   }
 
@@ -141,6 +182,151 @@ const FileManager = ({ serverId }) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const handleContextMenu = (e, item) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenuAnchor(e.currentTarget);
+    setContextMenu({
+      isOpen: true,
+      position: { x: rect.right, y: rect.top },
+      item
+    });
+  };
+
+  const handleMobileMenu = (e, item) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenuAnchor(e.currentTarget);
+    setContextMenu({
+      isOpen: true,
+      position: { x: rect.right, y: rect.top },
+      item
+    });
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu({ isOpen: false, position: { x: 0, y: 0 }, item: null })
+    setMenuAnchor(null)
+  }
+
+  const handleRename = async () => {
+    const newName = prompt('Enter new name:', contextMenu.item.name)
+    if (newName && newName !== contextMenu.item.name) {
+      try {
+        await axios.post(`/api/files/${serverId}/rename`, {
+          oldPath: contextMenu.item.path,
+          newName
+        })
+        fetchDirectory(currentPath)
+      } catch (error) {
+        console.error('Error renaming item:', error)
+      }
+    }
+    closeContextMenu()
+  }
+
+  const handleDownload = async () => {
+    try {
+      const response = await axios.get(`/api/files/${serverId}`, {
+        params: { path: contextMenu.item.path },
+        responseType: 'blob'
+      })
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', contextMenu.item.name)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading file:', error)
+    }
+    closeContextMenu()
+  }
+
+  const handleArchive = async () => {
+    try {
+      const response = await axios.get(`/api/files/${serverId}/archive`, {
+        params: { path: contextMenu.item.path },
+        responseType: 'blob'
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `${contextMenu.item.name}.zip`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (error) {
+      console.error('Error archiving file:', error)
+    }
+    closeContextMenu()
+  }
+
+  const toggleSelectMode = () => {
+    setIsSelectMode(!isSelectMode)
+    setSelectedItems(new Set())
+  }
+
+  const toggleItemSelection = (itemPath) => {
+    const newSelected = new Set(selectedItems)
+    if (newSelected.has(itemPath)) {
+      newSelected.delete(itemPath)
+    } else {
+      newSelected.add(itemPath)
+    }
+    setSelectedItems(newSelected)
+  }
+
+  const handleBulkArchive = async () => {
+    if (selectedItems.size === 0) return
+
+    try {
+      const response = await axios.post(`/api/files/${serverId}/bulk-archive`, {
+        paths: Array.from(selectedItems)
+      }, {
+        responseType: 'blob'
+      })
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'archive.zip')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      
+      setSelectedItems(new Set())
+      setIsSelectMode(false)
+    } catch (error) {
+      console.error('Error archiving files:', error)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) return
+    
+    if (window.confirm(`Are you sure you want to delete ${selectedItems.size} items?`)) {
+      try {
+        await Promise.all(Array.from(selectedItems).map(path =>
+          axios.delete(`/api/files/${serverId}`, {
+            params: { path }
+          })
+        ))
+        fetchDirectory(currentPath)
+        setSelectedItems(new Set())
+        setIsSelectMode(false)
+      } catch (error) {
+        console.error('Error deleting items:', error)
+      }
+    }
   }
 
   if (editingFile) {
@@ -185,7 +371,7 @@ const FileManager = ({ serverId }) => {
   }
 
   return (
-    <div className="card h-full">
+    <div className="card h-full" onContextMenu={(e) => e.preventDefault()}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <h3 className="text-lg font-medium text-white mr-4">File Manager</h3>
@@ -199,20 +385,57 @@ const FileManager = ({ serverId }) => {
             </button>
           )}
         </div>
-        <div className="flex space-x-2">
+        
+        <div className="flex items-center space-x-2">
+          {isSelectMode && (
+            <>
+              <button
+                onClick={handleBulkArchive}
+                className="btn btn-secondary"
+                disabled={selectedItems.size === 0}
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                Archive Selected
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="btn btn-danger"
+                disabled={selectedItems.size === 0}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Selected
+              </button>
+            </>
+          )}
           <button
-            onClick={createFolder}
-            className="btn btn-secondary text-sm"
+            onClick={toggleSelectMode}
+            className={`btn ${isSelectMode ? 'btn-primary' : 'btn-secondary'}`}
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Folder
+            {isSelectMode ? (
+              <>
+                <X className="w-4 h-4 mr-2" />
+                Cancel Selection
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Select Files
+              </>
+            )}
           </button>
           <button
             onClick={() => setShowUpload(true)}
-            className="btn btn-primary text-sm"
+            className="btn btn-primary"
           >
-            <Upload className="w-4 h-4 mr-1" />
+            <Upload className="w-4 h-4 mr-2" />
             Upload
+          </button>
+          <button
+            onClick={createFolder}
+            className="btn btn-secondary"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Folder
           </button>
         </div>
       </div>
@@ -235,70 +458,152 @@ const FileManager = ({ serverId }) => {
               This directory is empty
             </div>
           ) : (
-            items.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 bg-dark-700 rounded-lg hover:bg-dark-600 transition-colors"
-              >
+            <div className="grid grid-cols-1 gap-2">
+              {items.map((item) => (
                 <div
-                  className="flex items-center flex-1 cursor-pointer"
-                  onClick={() => handleFileClick(item)}
+                  key={item.path}
+                  className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                    selectedItems.has(item.path)
+                      ? 'bg-blue-600 hover:bg-blue-500'
+                      : 'bg-dark-600 hover:bg-dark-500'
+                  }`}
+                  onContextMenu={(e) => handleContextMenu(e, item)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isSelectMode) {
+                      toggleItemSelection(item.path);
+                    } else {
+                      handleFileClick(item);
+                    }
+                  }}
                 >
-                  {item.type === 'directory' ? (
-                    <Folder className="w-5 h-5 text-blue-400 mr-3" />
-                  ) : (
-                    <File className="w-5 h-5 text-dark-400 mr-3" />
-                  )}
-                  <div>
-                    <div className="text-white font-medium">{item.name}</div>
-                    <div className="text-xs text-dark-400">
-                      {item.type === 'file' && formatFileSize(item.size)} • 
-                      {new Date(item.modified).toLocaleDateString()}
-                    </div>
+                  <div className="flex items-center space-x-3">
+                    {isSelectMode && (
+                      <div className={`w-5 h-5 rounded border ${
+                        selectedItems.has(item.path)
+                          ? 'bg-blue-400 border-blue-400'
+                          : 'border-gray-400'
+                      }`}>
+                        {selectedItems.has(item.path) && (
+                          <Check className="w-5 h-5 text-white" />
+                        )}
+                      </div>
+                    )}
+                    {item.type === 'directory' ? (
+                      <Folder className="w-5 h-5 text-blue-400" />
+                    ) : (
+                      <File className="w-5 h-5 text-gray-400" />
+                    )}
+                    <span className="text-white">{item.name}</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-400">
+                      {item.type === 'file' ? formatFileSize(item.size) : ''}
+                    </span>
+                    {!isSelectMode && (
+                      <button
+                        onClick={(e) => handleMobileMenu(e, item)}
+                        className="p-1 hover:bg-dark-400 rounded"
+                      >
+                        <MoreVertical className="w-5 h-5 text-gray-400" />
+                      </button>
+                    )}
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => deleteItem(item.path)}
-                    className="p-2 text-red-400 hover:text-red-300 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))
+      <FileContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        onClose={closeContextMenu}
+        onDelete={() => deleteItem(contextMenu.item?.path)}
+        onRename={handleRename}
+        onDownload={handleDownload}
+        onArchive={handleArchive}
+        onUpload={() => setShowUpload(true)}
+        onCreateFolder={createFolder}
+        isDirectory={contextMenu.item?.type === 'directory'}
+        isMobile={isMobile}
+        anchorElement={menuAnchor}
+      />
+
+      {/* Upload Progress */}
+      {uploadStatus && (
+        <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg ${
+          uploadStatus === 'success' ? 'bg-green-500' :
+          uploadStatus === 'error' ? 'bg-red-500' :
+          'bg-blue-500'
+        } text-white`}>
+          {uploadStatus === 'uploading' && (
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Uploading... {uploadProgress}%</span>
+            </div>
+          )}
+          {uploadStatus === 'success' && (
+            <div className="flex items-center space-x-2">
+              <Check className="w-4 h-4" />
+              <span>Upload complete!</span>
+            </div>
+          )}
+          {uploadStatus === 'error' && (
+            <div className="flex items-center space-x-2">
+              <X className="w-4 h-4" />
+              <span>Upload failed</span>
+            </div>
           )}
         </div>
       )}
 
       {/* Upload Modal */}
       {showUpload && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-dark-800 rounded-lg max-w-md w-full">
-            <div className="flex items-center justify-between p-6 border-b border-dark-700">
-              <h3 className="text-lg font-medium text-white">Upload File</h3>
-              <button
-                onClick={() => setShowUpload(false)}
-                className="text-dark-400 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              <input
-                type="file"
-                onChange={(e) => {
-                  if (e.target.files[0]) {
-                    uploadFile(e.target.files[0])
-                  }
-                }}
-                className="w-full p-3 border-2 border-dashed border-dark-600 rounded-lg text-dark-400 hover:border-dark-500 transition-colors"
-              />
-              <p className="text-xs text-dark-400 mt-2">
-                Select a file to upload to the current directory
-              </p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-dark-700 p-6 rounded-lg w-96">
+            <h3 className="text-lg font-medium text-white mb-4">Upload File</h3>
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-dark-500 rounded-lg p-4 text-center">
+                <input
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      uploadFile(file);
+                    }
+                  }}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer text-blue-400 hover:text-blue-300"
+                >
+                  {uploadStatus === 'uploading' ? (
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Uploading... {uploadProgress}%</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 mx-auto mb-2" />
+                      <span>Click to select file</span>
+                    </>
+                  )}
+                </label>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowUpload(false)}
+                  className="btn btn-secondary"
+                  disabled={uploadStatus === 'uploading'}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
