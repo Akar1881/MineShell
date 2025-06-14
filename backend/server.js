@@ -22,9 +22,11 @@ const wss = new WebSocket.Server({
   path: '/ws',
   verifyClient: (info, callback) => {
     const origin = info.origin || info.req.headers.origin;
+    console.log('WebSocket connection attempt from origin:', origin);
     if (origin === 'http://localhost:3000' || origin === 'http://localhost:5173') {
       callback(true);
     } else {
+      console.log('WebSocket connection rejected from origin:', origin);
       callback(false, 403, 'Forbidden');
     }
   }
@@ -55,9 +57,16 @@ createDirectories();
 // WebSocket connections storage
 const wsConnections = new Map();
 
+// SSE connections storage
+const sseConnections = new Map();
+
+// Store console output buffer for each server
+const serverOutputs = new Map();
+const MAX_BUFFER_SIZE = 1000; // Keep last 1000 messages
+
 // WebSocket handling
 wss.on('connection', (ws, req) => {
-  console.log('WebSocket connection established');
+  console.log('WebSocket connection established from:', req.socket.remoteAddress);
   
   ws.on('message', async (message) => {
     try {
@@ -70,11 +79,11 @@ wss.on('connection', (ws, req) => {
           const isValid = auth.verifyToken(data.token);
           if (isValid) {
             ws.authenticated = true;
-            ws.send(JSON.stringify({ type: 'auth_success' }));
             console.log('WebSocket authentication successful');
+            ws.send(JSON.stringify({ type: 'auth_success' }));
           } else {
-            ws.send(JSON.stringify({ type: 'auth_failed' }));
             console.log('WebSocket authentication failed');
+            ws.send(JSON.stringify({ type: 'auth_failed' }));
             ws.close();
           }
           break;
@@ -98,9 +107,9 @@ wss.on('connection', (ws, req) => {
     }
   });
   
-  ws.on('close', () => {
+  ws.on('close', (code, reason) => {
+    console.log('WebSocket connection closed:', code, reason);
     wsConnections.delete(ws);
-    console.log('WebSocket connection closed');
   });
 
   ws.on('error', (error) => {
@@ -109,23 +118,94 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+// SSE endpoint for console streaming
+app.get('/api/servers/:serverId/console/stream', (req, res) => {
+  console.log('SSE connection attempt from:', req.headers.origin);
+  console.log('Server ID:', req.params.serverId);
+  
+  // Set headers for SSE
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*'
+  });
+
+  // Send initial connection message
+  const connectMessage = JSON.stringify({ type: 'connected' });
+  console.log('Sending connection message:', connectMessage);
+  res.write(`data: ${connectMessage}\n\n`);
+
+  // Store the connection
+  const clientId = Date.now().toString();
+  const serverId = req.params.serverId;
+  console.log('New SSE connection established:', clientId, 'for server:', serverId);
+  sseConnections.set(clientId, { res, serverId });
+
+  // Handle client disconnect
+  req.on('close', () => {
+    console.log('SSE client disconnected:', clientId);
+    sseConnections.delete(clientId);
+  });
+});
+
+// Get latest console output
+app.get('/api/servers/:serverId/console/latest', auth.authenticateToken, (req, res) => {
+  const { serverId } = req.params;
+  const outputs = serverOutputs.get(serverId) || [];
+  res.json({ outputs }); // Send all buffered messages
+});
+
+// Console command endpoint
+app.post('/api/servers/:serverId/console/command', auth.authenticateToken, async (req, res) => {
+  const { serverId } = req.params;
+  const { command } = req.body;
+
+  try {
+    await mcControl.sendCommand(serverId, command);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error sending command:', error);
+    res.status(500).json({ error: 'Failed to send command' });
+  }
+});
+
 // Broadcast console output to connected clients
 const broadcastConsoleOutput = (serverId, output) => {
   console.log(`Broadcasting to server ${serverId}:`, output);
-  wsConnections.forEach((subscribedServerId, ws) => {
-    if (subscribedServerId === serverId && ws.readyState === WebSocket.OPEN) {
+  
+  // Store the output in buffer
+  if (!serverOutputs.has(serverId)) {
+    serverOutputs.set(serverId, []);
+  }
+  
+  const outputs = serverOutputs.get(serverId);
+  outputs.push(output);
+  
+  // Keep buffer size limited
+  if (outputs.length > MAX_BUFFER_SIZE) {
+    outputs.shift(); // Remove oldest message
+  }
+  
+  // Also broadcast to SSE clients if any
+  let sentCount = 0;
+  sseConnections.forEach((connection, clientId) => {
+    if (connection.serverId === serverId) {
       try {
-        ws.send(JSON.stringify({
+        const message = JSON.stringify({
           type: 'console_output',
-          serverId,
-          output
-        }));
+          output: output + '\n'
+        });
+        connection.res.write(`data: ${message}\n\n`);
+        sentCount++;
       } catch (error) {
-        console.error('Error broadcasting to client:', error);
-        wsConnections.delete(ws);
+        console.error('Error broadcasting to client:', clientId, error);
+        sseConnections.delete(clientId);
       }
     }
   });
+  
+  console.log(`Broadcast complete. Sent to ${sentCount} clients.`);
 };
 
 // Set broadcast function for mc_control

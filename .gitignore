@@ -18,3 +18,9 @@ frontend/.env
 # servers
 
 .servers
+
+# Minecraft session files
+**/session.lock
+servers/*/world/session.lock
+servers/*/world_nether/session.lock
+servers/*/world_the_end/session.lock
