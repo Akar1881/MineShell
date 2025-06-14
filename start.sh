@@ -2,10 +2,6 @@
 
 echo "Starting MineShell 1.0.0..."
 
-# Load config values
-BACKEND_PORT=$(node -e "console.log(require('yamljs').load('./config.yaml').server.backend.port)")
-FRONTEND_PORT=$(node -e "console.log(require('yamljs').load('./config.yaml').server.frontend.port)")
-
 # Start backend server
 cd backend
 npm start &
@@ -21,8 +17,8 @@ FRONTEND_PID=$!
 
 echo
 echo "MineShell is starting up..."
-echo "Backend: http://localhost:$BACKEND_PORT"
-echo "Frontend: http://localhost:$FRONTEND_PORT"
+echo "Backend: http://localhost:3000"
+echo "Frontend: http://localhost:5173"
 echo
 echo "Press Ctrl+C to stop the servers"
 echo

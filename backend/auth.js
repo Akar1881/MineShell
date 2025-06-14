@@ -2,8 +2,9 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const YAML = require('yamljs');
+const path = require('path');
 
-const config = YAML.load('./config.yaml');
+const config = YAML.load(path.join(__dirname, '../config.yaml'));
 const router = express.Router();
 
 // Hash the admin password on startup

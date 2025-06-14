@@ -19,4 +19,12 @@ api:
 minecraft:
   default_port: 25565
   min_ram: "1G"
-  max_ram: "2G" 
+  max_ram: "2G"
+
+# Admin Configuration
+admin:
+  username: "admin"
+  password: "mineshell123"  # Change this in production!
+
+# JWT Configuration
+jwt_secret: "your-secret-key-here"  # Change this in production! 
