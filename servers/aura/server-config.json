@@ -1,9 +1,0 @@
-{
-  "name": "Aura",
-  "edition": "java",
-  "minRam": "1G",
-  "maxRam": "2G",
-  "port": 25565,
-  "jarFile": "server.jar",
-  "created": "2025-06-14T20:07:43.629Z"
-}
