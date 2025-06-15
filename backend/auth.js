@@ -3,8 +3,22 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const YAML = require('yamljs');
 const path = require('path');
+const fs = require('fs');
 
-const config = YAML.load(path.join(__dirname, '../config.yaml'));
+// Load environment variables if not already loaded
+if (!process.env.ADMIN_USER) {
+  require('dotenv').config({ path: path.join(__dirname, '../.env') });
+}
+
+// Load configuration and process environment variables
+let configContent = fs.readFileSync(path.join(__dirname, '../config.yaml'), 'utf8');
+
+// Replace environment variables in the format ${VAR_NAME} with their values
+configContent = configContent.replace(/\${([^}]+)}/g, (match, varName) => {
+  return process.env[varName] || match; // Return the env var value or keep the placeholder if not found
+});
+
+const config = YAML.parse(configContent);
 const router = express.Router();
 
 // Hash the admin password on startup

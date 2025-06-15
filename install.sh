@@ -20,15 +20,24 @@ fi
 echo "Installing backend dependencies..."
 cd backend
 npm install
+npm install dotenv --save
 if [ $? -ne 0 ]; then
     echo "Failed to install backend dependencies!"
     exit 1
+fi
+
+# Setup environment file if it doesn't exist
+if [ ! -f "../.env" ]; then
+    echo "Creating .env file from example.env..."
+    cp ../example.env ../.env
+    echo "Please update the .env file with secure credentials!"
 fi
 
 # Install frontend dependencies
 echo "Installing frontend dependencies..."
 cd ../frontend
 npm install
+npm install dotenv --save-dev
 if [ $? -ne 0 ]; then
     echo "Failed to install frontend dependencies!"
     exit 1

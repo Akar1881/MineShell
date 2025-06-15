@@ -22,15 +22,24 @@ if %errorlevel% neq 0 (
 echo Installing backend dependencies...
 cd backend
 call npm install
+call npm install dotenv --save
 if %errorlevel% neq 0 (
     echo Failed to install backend dependencies!
     pause
     exit /b 1
 )
 
+REM Setup environment file if it doesn't exist
+if not exist "../.env" (
+    echo Creating .env file from example.env...
+    copy ..\example.env ..\.env
+    echo Please update the .env file with secure credentials!
+)
+
 echo Installing frontend dependencies...
 cd ../frontend
 call npm install
+call npm install dotenv --save-dev
 if %errorlevel% neq 0 (
     echo Failed to install frontend dependencies!
     pause

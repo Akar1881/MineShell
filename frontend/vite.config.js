@@ -2,9 +2,21 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import yaml from 'yamljs'
 import path from 'path'
+import fs from 'fs'
+import dotenv from 'dotenv'
 
-// Load configuration
-const config = yaml.load(path.resolve(__dirname, '../config.yaml'))
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '../.env') })
+
+// Load configuration and process environment variables
+let configContent = fs.readFileSync(path.resolve(__dirname, '../config.yaml'), 'utf8')
+
+// Replace environment variables in the format ${VAR_NAME} with their values
+configContent = configContent.replace(/\${([^}]+)}/g, (match, varName) => {
+  return process.env[varName] || match // Return the env var value or keep the placeholder if not found
+})
+
+const config = yaml.parse(configContent)
 
 export default defineConfig({
   plugins: [react()],

@@ -48,6 +48,30 @@ chmod +x install.sh start.sh
 
 ## Configuration
 
+### Environment Variables
+
+MineShell uses environment variables for sensitive configuration. Copy the `example.env` file to `.env` and modify as needed:
+
+```bash
+# Copy example environment file
+cp example.env .env
+
+# Edit the .env file with your secure values
+nano .env  # or use any text editor
+```
+
+Example `.env` file:
+```
+# Admin Credentials
+ADMIN_USER=admin
+ADMIN_PASS=mineshell123
+
+# Security
+JWT_SECRET=change_this_to_a_secure_random_string_at_least_32_chars_long
+```
+
+### Main Configuration
+
 Edit `config.yaml` to configure:
 
 ```yaml
@@ -92,7 +116,9 @@ The panel will be available at:
 
 ## Security Notes
 
-- Change default passwords after installation
+- Change default credentials in the `.env` file
+- Use a strong, unique JWT secret in the `.env` file
+- Never commit your `.env` file to version control
 - Use HTTPS in production
 - Keep your database file secure
 - Regularly backup your database and server files

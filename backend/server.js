@@ -8,13 +8,23 @@ const compression = require('compression');
 const YAML = require('yamljs');
 const initDatabase = require('./config/init-db');
 
+// Load environment variables from .env file
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
 // Import modules
 const auth = require('./auth');
 const mcControl = require('./mc_control');
 const fileManager = require('./file_manager');
 
-// Load configuration
-const config = YAML.load(path.join(__dirname, '../config.yaml'));
+// Load configuration and process environment variables
+let configContent = fs.readFileSync(path.join(__dirname, '../config.yaml'), 'utf8');
+
+// Replace environment variables in the format ${VAR_NAME} with their values
+configContent = configContent.replace(/\${([^}]+)}/g, (match, varName) => {
+  return process.env[varName] || match; // Return the env var value or keep the placeholder if not found
+});
+
+const config = YAML.parse(configContent);
 
 // Initialize database
 initDatabase().then(() => {

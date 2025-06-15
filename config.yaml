@@ -23,8 +23,8 @@ minecraft:
 
 # Admin Configuration
 admin:
-  username: "admin"
-  password: "mineshell123"  # Change this in production!
+  username: "${ADMIN_USER}"
+  password: "${ADMIN_PASS}"
 
 # JWT Configuration
-jwt_secret: "your-secret-key-here"  # Change this in production! 
+jwt_secret: "${JWT_SECRET}"
