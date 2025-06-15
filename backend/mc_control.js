@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const net = require('net');
+const Server = require('./models/Server');
 
 const router = express.Router();
 const runningServers = new Map();
@@ -26,32 +27,15 @@ const isPortInUse = (port) => {
 };
 
 // Get all servers
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const serversDir = path.join(__dirname, '../servers');
-    if (!fs.existsSync(serversDir)) {
-      fs.mkdirSync(serversDir, { recursive: true });
-    }
+    const servers = await Server.findAll();
+    const serversWithStatus = servers.map(server => ({
+      ...server.toJSON(),
+      status: runningServers.has(server.id) ? 'running' : server.status
+    }));
     
-    const servers = [];
-    const serverDirs = fs.readdirSync(serversDir, { withFileTypes: true })
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => dirent.name);
-    
-    serverDirs.forEach(serverId => {
-      const configPath = path.join(serversDir, serverId, 'server-config.json');
-      if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        const isRunning = runningServers.has(serverId);
-        servers.push({
-          ...config,
-          id: serverId,
-          status: isRunning ? 'running' : 'stopped'
-        });
-      }
-    });
-    
-    res.json({ success: true, servers });
+    res.json({ success: true, servers: serversWithStatus });
   } catch (error) {
     console.error('Error getting servers:', error);
     res.status(500).json({ success: false, message: 'Failed to get servers' });
@@ -79,33 +63,29 @@ router.post('/', async (req, res) => {
     const serverDir = path.join(__dirname, '../servers', serverId);
     
     // Check if server already exists
-    if (fs.existsSync(serverDir)) {
+    const existingServer = await Server.findByPk(serverId);
+    if (existingServer) {
       return res.status(400).json({ success: false, message: 'Server already exists' });
     }
     
     // Create server directory
     fs.mkdirSync(serverDir, { recursive: true });
     
-    // Create server configuration
-    const serverConfig = {
+    // Create server in database
+    const server = await Server.create({
+      id: serverId,
       name,
       edition,
       minRam: minRam || '1G',
       maxRam: maxRam || '2G',
       port: parseInt(port),
       jarFile: jarFile || 'server.jar',
-      created: new Date().toISOString()
-    };
+      status: 'stopped'
+    });
     
-    fs.writeFileSync(
-      path.join(serverDir, 'server-config.json'),
-      JSON.stringify(serverConfig, null, 2)
-    );
-    
-    // Create basic server.properties if it doesn't exist
+    // Create basic server.properties
     const serverPropsPath = path.join(serverDir, 'server.properties');
-    if (!fs.existsSync(serverPropsPath)) {
-      const defaultProps = `server-port=${port}
+    const defaultProps = `server-port=${port}
 motd=A Minecraft Server
 online-mode=true
 max-players=20
@@ -114,13 +94,19 @@ gamemode=survival
 pvp=true
 spawn-protection=16
 `;
-      fs.writeFileSync(serverPropsPath, defaultProps);
-    }
+    fs.writeFileSync(serverPropsPath, defaultProps);
+
+    // Create eula.txt
+    const eulaPath = path.join(serverDir, 'eula.txt');
+    const eulaContent = `#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://account.mojang.com/documents/minecraft_eula).
+#Generated for MineShell
+eula=true`;
+    fs.writeFileSync(eulaPath, eulaContent, 'utf8');
     
     res.json({
       success: true,
       message: 'Server created successfully',
-      server: { ...serverConfig, id: serverId, status: 'stopped' }
+      server: { ...server.toJSON(), status: 'stopped' }
     });
   } catch (error) {
     console.error('Error creating server:', error);
@@ -129,13 +115,12 @@ spawn-protection=16
 });
 
 // Start server
-router.post('/:id/start', (req, res) => {
+router.post('/:id/start', async (req, res) => {
   try {
     const serverId = req.params.id;
-    const serverDir = path.join(__dirname, '../servers', serverId);
-    const configPath = path.join(serverDir, 'server-config.json');
+    const server = await Server.findByPk(serverId);
     
-    if (!fs.existsSync(configPath)) {
+    if (!server) {
       return res.status(404).json({ success: false, message: 'Server not found' });
     }
     
@@ -143,30 +128,27 @@ router.post('/:id/start', (req, res) => {
       return res.status(400).json({ success: false, message: 'Server is already running' });
     }
     
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    const jarPath = path.join(serverDir, config.jarFile);
+    const serverDir = path.join(__dirname, '../servers', serverId);
+    const jarPath = path.join(serverDir, server.jarFile);
     
     if (!fs.existsSync(jarPath)) {
       return res.status(400).json({ success: false, message: 'Server JAR file not found' });
     }
     
+    // Update server status
+    await server.update({ 
+      status: 'starting',
+      lastStarted: new Date()
+    });
+    
     // Start the server process
     const javaArgs = [
-      `-Xms${config.minRam}`,
-      `-Xmx${config.maxRam}`,
+      `-Xms${server.minRam}`,
+      `-Xmx${server.maxRam}`,
       '-jar',
-      config.jarFile,
+      server.jarFile,
       'nogui'
     ];
-    
-    // Create EULA.txt if it doesn't exist
-    const eulaPath = path.join(serverDir, 'eula.txt');
-    if (!fs.existsSync(eulaPath)) {
-      const eulaContent = `#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://account.mojang.com/documents/minecraft_eula).
-#Generated for MineShell
-eula=true`;
-      fs.writeFileSync(eulaPath, eulaContent, 'utf8');
-    }
     
     const serverProcess = spawn('java', javaArgs, {
       cwd: serverDir,
@@ -176,7 +158,7 @@ eula=true`;
     // Store the process
     runningServers.set(serverId, {
       process: serverProcess,
-      config
+      config: server
     });
     
     // Handle process output
@@ -196,13 +178,27 @@ eula=true`;
       }
     });
     
-    serverProcess.on('close', (code) => {
+    serverProcess.on('close', async (code) => {
       console.log(`[${serverId}] Server process exited with code ${code}`);
       runningServers.delete(serverId);
+      
+      // Update server status
+      await server.update({ 
+        status: 'stopped',
+        lastStopped: new Date()
+      });
+      
       if (broadcastFunction) {
         broadcastFunction(serverId, `Server stopped with exit code ${code}\n`);
       }
     });
+    
+    // Update server status to running after a short delay
+    setTimeout(async () => {
+      if (runningServers.has(serverId)) {
+        await server.update({ status: 'running' });
+      }
+    }, 5000);
     
     res.json({ success: true, message: 'Server started successfully' });
   } catch (error) {
@@ -215,17 +211,29 @@ eula=true`;
 router.post('/:id/stop', async (req, res) => {
   try {
     const serverId = req.params.id;
-    const server = runningServers.get(serverId);
+    const server = await Server.findByPk(serverId);
+    const serverProcess = runningServers.get(serverId);
     const forceStop = req.query.force === 'true';
     
     if (!server) {
-      return res.status(404).json({ success: false, message: 'Server is not running' });
+      return res.status(404).json({ success: false, message: 'Server not found' });
     }
+    
+    if (!serverProcess) {
+      return res.status(400).json({ success: false, message: 'Server is not running' });
+    }
+    
+    // Update server status
+    await server.update({ status: 'stopping' });
     
     if (forceStop) {
       // Force stop - kill immediately
-      server.process.kill('SIGKILL');
+      serverProcess.process.kill('SIGKILL');
       runningServers.delete(serverId);
+      await server.update({ 
+        status: 'stopped',
+        lastStopped: new Date()
+      });
       if (broadcastFunction) {
         broadcastFunction(serverId, 'Server force stopped\n');
       }
@@ -233,10 +241,10 @@ router.post('/:id/stop', async (req, res) => {
     }
     
     // Normal stop - try graceful shutdown first
-    server.process.stdin.write('stop\n');
+    serverProcess.process.stdin.write('stop\n');
     
     // Set a timeout for graceful shutdown
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       if (runningServers.has(serverId)) {
         console.log(`[${serverId}] Force stopping server after timeout`);
         const server = runningServers.get(serverId);
@@ -245,12 +253,19 @@ router.post('/:id/stop', async (req, res) => {
           server.process.kill('SIGTERM');
           
           // If still running after 5 seconds, use SIGKILL
-          setTimeout(() => {
+          setTimeout(async () => {
             if (runningServers.has(serverId)) {
               const server = runningServers.get(serverId);
               if (server) {
                 server.process.kill('SIGKILL');
                 runningServers.delete(serverId);
+                await Server.update(
+                  { 
+                    status: 'stopped',
+                    lastStopped: new Date()
+                  },
+                  { where: { id: serverId } }
+                );
                 if (broadcastFunction) {
                   broadcastFunction(serverId, 'Server force killed\n');
                 }
@@ -261,27 +276,6 @@ router.post('/:id/stop', async (req, res) => {
       }
     }, 30000); // 30 seconds for normal shutdown
     
-    // Wait for process to exit
-    server.process.once('close', () => {
-      clearTimeout(timeout);
-      runningServers.delete(serverId);
-      
-      // Clear server logs
-      const logPath = path.join(__dirname, '../servers', serverId, 'logs', 'latest.log');
-      if (fs.existsSync(logPath)) {
-        try {
-          fs.writeFileSync(logPath, ''); // Clear the log file
-          console.log(`[${serverId}] Logs cleared`);
-        } catch (error) {
-          console.error(`[${serverId}] Failed to clear logs:`, error);
-        }
-      }
-      
-      if (broadcastFunction) {
-        broadcastFunction(serverId, 'Server stopped\n');
-      }
-    });
-    
     res.json({ 
       success: true, 
       message: 'Server stop command sent',
@@ -290,6 +284,39 @@ router.post('/:id/stop', async (req, res) => {
   } catch (error) {
     console.error('Error stopping server:', error);
     res.status(500).json({ success: false, message: 'Failed to stop server' });
+  }
+});
+
+// Delete server
+router.delete('/:id', async (req, res) => {
+  try {
+    const serverId = req.params.id;
+    const server = await Server.findByPk(serverId);
+    
+    if (!server) {
+      return res.status(404).json({ success: false, message: 'Server not found' });
+    }
+    
+    // Stop server if running
+    if (runningServers.has(serverId)) {
+      const serverData = runningServers.get(serverId);
+      serverData.process.kill('SIGTERM');
+      runningServers.delete(serverId);
+    }
+    
+    // Delete server directory
+    const serverDir = path.join(__dirname, '../servers', serverId);
+    if (fs.existsSync(serverDir)) {
+      fs.rmSync(serverDir, { recursive: true, force: true });
+    }
+    
+    // Delete from database
+    await server.destroy();
+    
+    res.json({ success: true, message: 'Server deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting server:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete server' });
   }
 });
 
@@ -303,42 +330,8 @@ const sendCommand = (serverId, command) => {
   return false;
 };
 
-// Delete server
-router.delete('/:id', (req, res) => {
-  try {
-    const serverId = req.params.id;
-    const serverDir = path.join(__dirname, '../servers', serverId);
-    
-    // Stop server if running
-    if (runningServers.has(serverId)) {
-      const serverData = runningServers.get(serverId);
-      serverData.process.kill('SIGTERM');
-      runningServers.delete(serverId);
-    }
-    
-    // Delete server directory
-    if (fs.existsSync(serverDir)) {
-      fs.rmSync(serverDir, { recursive: true, force: true });
-    }
-    
-    res.json({ success: true, message: 'Server deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting server:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete server' });
-  }
-});
-
-// Stop all servers (for graceful shutdown)
-const stopAllServers = () => {
-  runningServers.forEach((serverData, serverId) => {
-    console.log(`Stopping server: ${serverId}`);
-    serverData.process.stdin.write('stop\n');
-  });
-};
-
 module.exports = {
   router,
-  sendCommand,
   setBroadcastFunction,
-  stopAllServers
+  sendCommand
 };

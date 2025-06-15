@@ -10,12 +10,16 @@ A modern web-based Minecraft server management panel.
 - Server configuration
 - Multiple server support
 - Cross-platform (Windows & Linux)
+- SQLite database for reliable server metadata storage
+- Automatic EULA acceptance
+- Server status tracking and history
 
 ## Requirements
 
 - Node.js 16 or higher
 - Java 17 or higher
 - npm (comes with Node.js)
+- SQLite3 (comes with Node.js)
 
 ## Quick Installation
 
@@ -53,7 +57,7 @@ server:
     port: 3000
     host: "0.0.0.0"  # Change to your domain or IP for production
   frontend:
-    port: 5173
+    port: 8080
     host: "0.0.0.0"  # Change to your domain or IP for production
 
 # API Configuration
@@ -68,23 +72,56 @@ minecraft:
   max_ram: "2G"
 ```
 
-For production deployment:
-1. Change `host` values to your domain or IP
-2. Update `api.base_url` and `api.ws_url` to your domain
-3. Configure your reverse proxy (nginx/apache) if needed
+## Data Storage
+
+MineShell uses SQLite for storing server metadata and configuration. The database file is located at:
+```
+data/mineshell.db
+```
+
+Server files (worlds, JAR files, etc.) are stored in:
+```
+servers/<server-id>/
+```
 
 ## Default Access
 
 The panel will be available at:
 - Backend: http://localhost:3000 (or your configured port)
-- Frontend: http://localhost:5173 (or your configured port)
+- Frontend: http://localhost:8080 (or your configured port)
 
 ## Security Notes
 
 - Change default passwords after installation
 - Use HTTPS in production
-- Configure firewall rules appropriately
-- Keep Java and Node.js updated
+- Keep your database file secure
+- Regularly backup your database and server files
+
+## Development
+
+### Project Structure
+```
+mineshell/
+├── backend/           # Backend server code
+│   ├── config/       # Configuration files
+│   ├── models/       # Database models
+│   └── ...
+├── frontend/         # Frontend React application
+├── data/            # SQLite database
+├── servers/         # Minecraft server files
+└── config.yaml      # Main configuration file
+```
+
+### Database Schema
+The main server table includes:
+- Server ID
+- Name
+- Edition (Java/Bedrock)
+- RAM settings
+- Port
+- Status
+- Start/Stop timestamps
+- Creation/Update timestamps
 
 ## Support
 

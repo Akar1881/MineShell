@@ -11,6 +11,7 @@ export default defineConfig({
   server: {
     port: config.server.frontend.port,
     host: config.server.frontend.host,
+    strictPort: true,
     proxy: {
       '/api': {
         target: `http://${config.server.backend.host}:${config.server.backend.port}`,

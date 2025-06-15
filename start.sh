@@ -12,13 +12,13 @@ sleep 5
 
 # Start frontend server
 cd ../frontend
-npm run preview &
+npm run dev &
 FRONTEND_PID=$!
 
 echo
 echo "MineShell is starting up..."
 echo "Backend: http://localhost:3000"
-echo "Frontend: http://localhost:5173"
+echo "Frontend: http://localhost:8080"
 echo
 echo "Press Ctrl+C to stop the servers"
 echo

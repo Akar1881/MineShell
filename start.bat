@@ -8,12 +8,12 @@ REM Wait a moment for backend to start
 timeout /t 5
 
 REM Start frontend server
-start cmd /k "cd frontend && npm run preview"
+start cmd /k "cd frontend && npm run dev"
 
 echo.
 echo MineShell is starting up...
 echo Backend: http://localhost:3000
-echo Frontend: http://localhost:5173
+echo Frontend: http://localhost:8080
 echo.
 echo Press Ctrl+C in the terminal windows to stop the servers
 echo.

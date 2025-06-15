@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const compression = require('compression');
 const YAML = require('yamljs');
+const initDatabase = require('./config/init-db');
 
 // Import modules
 const auth = require('./auth');
@@ -14,6 +15,14 @@ const fileManager = require('./file_manager');
 
 // Load configuration
 const config = YAML.load(path.join(__dirname, '../config.yaml'));
+
+// Initialize database
+initDatabase().then(() => {
+  console.log('Database initialized successfully');
+}).catch(err => {
+  console.error('Failed to initialize database:', err);
+  process.exit(1);
+});
 
 const app = express();
 const server = http.createServer(app);

@@ -7,7 +7,7 @@ server:
     port: 3000
     host: "0.0.0.0"  # Change to your domain or IP for production
   frontend:
-    port: 5173
+    port: 8080
     host: "0.0.0.0"  # Change to your domain or IP for production
 
 # API Configuration
