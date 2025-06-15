@@ -1,26 +1,360 @@
-# Node.js
+# ===================================
+# MineShell Project .gitignore
+# ===================================
+
+# ===================================
+# Environment & Configuration
+# ===================================
+# Environment variables (contains sensitive data)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Configuration backups
+config.yaml.bak
+config.yaml.backup
+*.config.backup
+
+# ===================================
+# Database & Data Files
+# ===================================
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+data/
+database/
+
+# Database backups
+*.db.backup
+*.sql.backup
+
+# ===================================
+# Minecraft Server Files
+# ===================================
+# Server directories (contains worlds, plugins, etc.)
+servers/
+minecraft-servers/
+
+# Minecraft server JAR files
+*.jar
+
+# Minecraft world files
+world/
+world_nether/
+world_the_end/
+*/world/
+*/world_nether/
+*/world_the_end/
+
+# Minecraft logs
+logs/
+*/logs/
+*.log
+latest.log
+debug.log
+
+# Minecraft crash reports
+crash-reports/
+*/crash-reports/
+
+# Minecraft server properties (may contain sensitive info)
+server.properties
+*/server.properties
+
+# EULA files
+eula.txt
+*/eula.txt
+
+# Minecraft plugins and mods
+plugins/
+*/plugins/
+mods/
+*/mods/
+
+# Minecraft cache
+cache/
+*/cache/
+
+# ===================================
+# Node.js Dependencies
+# ===================================
+# Dependencies
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-.env
+pnpm-debug.log*
+
+# Package manager lock files (keep package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+
+# ===================================
+# Build & Distribution
+# ===================================
+# Frontend build output
+frontend/dist/
+frontend/build/
+build/
+dist/
+
+# Backend build output (if any)
+backend/dist/
+backend/build/
+
+# ===================================
+# Logs & Runtime Files
+# ===================================
+# Application logs
+*.log
+logs/
+log/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# ===================================
+# Temporary & Cache Files
+# ===================================
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Cache directories
+.cache/
+.npm/
+.yarn/
+.pnpm/
+
+# ESLint cache
+.eslintcache
+
+# Vite cache
+.vite/
+
+# ===================================
+# Operating System Files
+# ===================================
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
-# Backend
-backend/node_modules/
-backend/.env
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
 
-# Frontend
-frontend/node_modules/
-frontend/.env 
+# ===================================
+# IDE & Editor Files
+# ===================================
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
 
-# servers
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
 
-.servers
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
 
-# Minecraft session files
-**/session.lock
-servers/*/world/session.lock
-servers/*/world_nether/session.lock
-servers/*/world_the_end/session.lock
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ===================================
+# Security & Sensitive Files
+# ===================================
+# SSH keys
+*.pem
+*.key
+*.crt
+*.csr
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# SSL certificates
+*.p12
+*.pfx
+
+# API keys and secrets
+secrets/
+.secrets
+api-keys.txt
+credentials.json
+
+# ===================================
+# Backup Files
+# ===================================
+# General backups
+*.backup
+*.bak
+*.old
+*.orig
+*.save
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# ===================================
+# Development & Testing
+# ===================================
+# Test coverage
+coverage/
+.nyc_output/
+
+# Jest
+jest_*
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+
+# ===================================
+# Uploads & User Content
+# ===================================
+# File uploads directory
+uploads/
+upload/
+files/
+user-uploads/
+
+# User generated content
+user-content/
+media/
+
+# ===================================
+# Process & Runtime
+# ===================================
+# PM2 process files
+.pm2/
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+docker-compose.yaml
+
+# ===================================
+# Miscellaneous
+# ===================================
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# ===================================
+# Custom Project Exclusions
+# ===================================
+# Add any project-specific files here
+# Example:
+# custom-config.json
+# local-settings.yaml

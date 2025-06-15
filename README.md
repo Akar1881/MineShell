@@ -8,6 +8,14 @@ A modern web-based Minecraft server management panel.
 - Real-time console output
 - File management
 - Server configuration
+  - Message of the Day (MOTD) with advanced formatting
+  - RAM allocation (min/max)
+  - Player limits
+  - Whitelist toggle
+  - Online mode toggle
+  - Game difficulty settings
+  - Game mode selection
+  - PvP toggle
 - Multiple server support
 - Cross-platform (Windows & Linux)
 - SQLite database for reliable server metadata storage
@@ -180,6 +188,7 @@ MIT License
 - 🛠 **Server Management** - Create, start, stop, and delete Minecraft servers
 - 📂 **File Manager** - Full file management with upload, edit, and download capabilities
 - 🖥 **Real-time Console** - WebSocket-powered console with command execution
+- ⚙️ **Advanced Settings** - Comprehensive server configuration with game settings
 - ⚡ **Easy Setup** - One-command installation for Windows and Linux
 - 🎨 **Dark Theme** - Modern dark UI optimized for long usage sessions
 

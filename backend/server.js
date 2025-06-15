@@ -7,6 +7,7 @@ const fs = require('fs');
 const compression = require('compression');
 const YAML = require('yamljs');
 const initDatabase = require('./config/init-db');
+const { Server } = require('./models');
 
 // Load environment variables from .env file
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
@@ -241,6 +242,96 @@ mcControl.setBroadcastFunction(broadcastConsoleOutput);
 app.use('/api/auth', auth.router);
 app.use('/api/servers', auth.authenticateToken, mcControl.router);
 app.use('/api/files', auth.authenticateToken, fileManager.router);
+
+// Get server settings
+app.get('/api/servers/:serverId/settings', auth.authenticateToken, async (req, res) => {
+  const { serverId } = req.params;
+  try {
+    const serverPath = path.join(__dirname, '../servers', serverId);
+    const serverPropertiesPath = path.join(serverPath, 'server.properties');
+    
+    if (!fs.existsSync(serverPropertiesPath)) {
+      return res.status(404).json({ error: 'Server properties file not found' });
+    }
+
+    const properties = fs.readFileSync(serverPropertiesPath, 'utf8')
+      .split('\n')
+      .reduce((acc, line) => {
+        if (line && !line.startsWith('#')) {
+          const [key, value] = line.split('=');
+          if (key && value) {
+            acc[key.trim()] = value.trim();
+          }
+        }
+        return acc;
+      }, {});
+
+    const settings = {
+      motd: properties['motd'] || '',
+      minRam: properties['min-ram'] || 1,
+      maxRam: properties['max-ram'] || 4,
+      maxPlayers: parseInt(properties['max-players']) || 20,
+      whitelistEnabled: properties['white-list'] === 'true',
+      onlineMode: properties['online-mode'] === 'true'
+    };
+
+    res.json(settings);
+  } catch (error) {
+    console.error('Error reading server settings:', error);
+    res.status(500).json({ error: 'Failed to read server settings' });
+  }
+});
+
+// Update server settings
+app.put('/api/servers/:serverId/settings', async (req, res) => {
+  try {
+    const { serverId } = req.params;
+    const { motd, minRam, maxRam, maxPlayers, whitelist, onlineMode, difficulty, gamemode, pvp } = req.body;
+
+    // Read current properties
+    const propertiesPath = path.join(__dirname, '../servers', serverId, 'server.properties');
+    let properties = {};
+    
+    if (fs.existsSync(propertiesPath)) {
+      const content = fs.readFileSync(propertiesPath, 'utf8');
+      properties = parseProperties(content);
+    }
+
+    // Update properties with new settings
+    properties['motd'] = motd;
+    properties['min-ram'] = `${minRam}G`;
+    properties['max-ram'] = `${maxRam}G`;
+    properties['max-players'] = maxPlayers;
+    properties['white-list'] = whitelist;
+    properties['online-mode'] = onlineMode;
+    properties['difficulty'] = difficulty;
+    properties['gamemode'] = gamemode;
+    properties['pvp'] = pvp;
+
+    // Write updated properties back to file
+    fs.writeFileSync(propertiesPath, stringifyProperties(properties));
+
+    // Update database record
+    const server = await Server.findByPk(serverId);
+    if (server) {
+      await server.update({
+        minRam: `${minRam}G`,
+        maxRam: `${maxRam}G`
+      });
+    }
+
+    // Restart server if it's running
+    if (mcControl.isServerRunning(serverId)) {
+      await mcControl.stopServer(serverId);
+      await mcControl.startServer(serverId);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating server settings:', error);
+    res.status(500).json({ error: 'Failed to update server settings' });
+  }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

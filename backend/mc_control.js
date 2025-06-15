@@ -484,8 +484,15 @@ const sendCommand = (serverId, command) => {
   return false;
 };
 
+// Check if server is running
+const isServerRunning = (serverId) => {
+  return runningServers.has(serverId);
+};
+
+// Export functions
 module.exports = {
   router,
   setBroadcastFunction,
-  sendCommand
+  sendCommand,
+  isServerRunning
 };

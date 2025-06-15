@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { ArrowLeft, Play, Square, Settings, FolderOpen, Terminal, Upload } from 'lucide-react'
 import Console from './Console'
@@ -7,6 +7,7 @@ import FileManager from './FileManager'
 
 const ServerDetail = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [server, setServer] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('console')
@@ -61,6 +62,14 @@ const ServerDetail = () => {
     { id: 'files', name: 'Files', icon: FolderOpen },
     { id: 'settings', name: 'Settings', icon: Settings },
   ]
+
+  const handleTabChange = (tabId) => {
+    if (tabId === 'settings') {
+      navigate(`/server/${id}/settings`)
+    } else {
+      setActiveTab(tabId)
+    }
+  }
 
   if (loading) {
     return (
@@ -141,7 +150,7 @@ const ServerDetail = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabChange(tab.id)}
                   className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
                       ? 'border-primary-500 text-primary-400'
@@ -166,12 +175,6 @@ const ServerDetail = () => {
           />
         )}
         {activeTab === 'files' && <FileManager serverId={id} />}
-        {activeTab === 'settings' && (
-          <div className="card">
-            <h3 className="text-lg font-medium text-white mb-4">Server Settings</h3>
-            <p className="text-dark-400">Settings panel coming soon...</p>
-          </div>
-        )}
       </div>
     </div>
   )

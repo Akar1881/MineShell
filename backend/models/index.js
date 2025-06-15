@@ -30,7 +30,7 @@ const Server = require('./Server');
 
 // Initialize models
 const models = {
-  Server: Server(sequelize)
+  Server
 };
 
 // Export models and sequelize instance

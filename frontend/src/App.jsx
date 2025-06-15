@@ -5,6 +5,7 @@ import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import ServerDetail from './components/ServerDetail'
 import Layout from './components/Layout'
+import Settings from './components/Settings'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
@@ -38,6 +39,13 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <ServerDetail />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/server/:id/settings" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
                 </Layout>
               </ProtectedRoute>
             } />
