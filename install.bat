@@ -22,7 +22,6 @@ if %errorlevel% neq 0 (
 echo Installing backend dependencies...
 cd backend
 call npm install
-call npm install dotenv --save
 if %errorlevel% neq 0 (
     echo Failed to install backend dependencies!
     pause

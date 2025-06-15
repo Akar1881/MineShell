@@ -20,7 +20,6 @@ fi
 echo "Installing backend dependencies..."
 cd backend
 npm install
-npm install dotenv --save
 if [ $? -ne 0 ]; then
     echo "Failed to install backend dependencies!"
     exit 1
