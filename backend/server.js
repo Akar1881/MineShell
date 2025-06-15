@@ -253,7 +253,30 @@ app.get('/api/health', (req, res) => {
 
 // Serve React app for all other routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  // Check if the frontend build exists
+  const indexPath = path.join(__dirname, '../frontend/dist/index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(503).send(`
+      <html>
+        <head><title>MineShell - Frontend Not Built</title></head>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+          <h1>MineShell Frontend Not Built</h1>
+          <p>The frontend application has not been built yet. Please run the following commands:</p>
+          <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+cd frontend
+npm run build
+          </pre>
+          <p>Or use the provided script:</p>
+          <pre style="background: #f0f0f0; padding: 10px; border-radius: 5px;">
+./update-frontend.bat
+          </pre>
+          <p>Then restart the server.</p>
+        </body>
+      </html>
+    `);
+  }
 });
 
 // Start server

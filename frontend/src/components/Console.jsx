@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Send } from 'lucide-react'
+import ServerStats from './ServerStats'
 
 const Console = ({ serverId, onStatusChange }) => {
   const [messages, setMessages] = useState([])
@@ -118,6 +119,9 @@ const Console = ({ serverId, onStatusChange }) => {
 
   return (
     <div className="bg-dark-800 rounded-lg p-4">
+      {/* Server Stats Panel */}
+      <ServerStats serverId={serverId} />
+      
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-white">Console</h3>
         <div className="flex items-center space-x-3">

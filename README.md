@@ -110,9 +110,25 @@ servers/<server-id>/
 
 ## Default Access
 
-The panel will be available at:
-- Backend: http://localhost:3000 (or your configured port)
-- Frontend: http://localhost:8080 (or your configured port)
+### Production Mode
+In production mode, the application is available at:
+- http://localhost:3000 (or your configured backend port)
+
+### Development Mode
+In development mode, you can access the application in two ways:
+
+1. **Backend Server (Recommended for normal use)**
+   - URL: http://localhost:3000
+   - This serves the built frontend files from the backend
+   - Use this for a stable experience
+
+2. **Frontend Development Server**
+   - URL: http://localhost:8080
+   - This runs the frontend in development mode with hot reloading
+   - Use this only when actively developing the frontend
+   - Note: This requires the backend server to be running
+
+If you're experiencing issues with the frontend development server (white screen), use the backend URL instead.
 
 ## Security Notes
 

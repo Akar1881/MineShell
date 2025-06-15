@@ -29,6 +29,7 @@ export default defineConfig({
         target: `http://${config.server.backend.host}:${config.server.backend.port}`,
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path
       }
     }
   },

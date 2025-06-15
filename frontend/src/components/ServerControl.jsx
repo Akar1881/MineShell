@@ -3,8 +3,25 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const ServerControl = ({ server, onStatusChange }) => {
+  const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
+
+  const handleStart = async () => {
+    try {
+      setIsStarting(true);
+      const response = await axios.post(`/api/servers/${server.id}/start`);
+      if (response.data.success) {
+        toast.success('Server starting...');
+        // Status will be updated by the parent component
+      }
+    } catch (error) {
+      console.error('Error starting server:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to start server';
+      toast.error(errorMessage);
+      setIsStarting(false);
+    }
+  };
 
   const handleStop = async () => {
     try {
@@ -12,12 +29,21 @@ const ServerControl = ({ server, onStatusChange }) => {
       const response = await axios.post(`/api/servers/${server.id}/stop`);
       if (response.data.success) {
         // Status will be updated by Console component
-        toast.info('Server stopping...');
+        toast.info(response.data.message || 'Server stopping...');
+        if (response.data.note) {
+          toast.info(response.data.note, { duration: 5000 });
+        }
       }
     } catch (error) {
       console.error('Error stopping server:', error);
-      toast.error('Failed to stop server');
-      setIsStopping(false);
+      // Display the specific error message from the server if available
+      const errorMessage = error.response?.data?.message || 'Failed to stop server';
+      toast.error(errorMessage);
+      
+      // If the server is already stopping, don't reset the isStopping state
+      if (error.response?.data?.message !== 'Server is already in the process of stopping') {
+        setIsStopping(false);
+      }
     }
   };
 
@@ -30,7 +56,8 @@ const ServerControl = ({ server, onStatusChange }) => {
       }
     } catch (error) {
       console.error('Error force stopping server:', error);
-      toast.error('Failed to force stop server');
+      const errorMessage = error.response?.data?.message || 'Failed to force stop server';
+      toast.error(errorMessage);
     } finally {
       setIsStopping(false);
       setShowKillConfirm(false);
@@ -45,15 +72,16 @@ const ServerControl = ({ server, onStatusChange }) => {
           className="btn btn-danger"
           disabled={isStopping}
         >
-          Stop
+          {isStopping ? 'Stopping...' : 'Stop'}
         </button>
       ) : server.status === 'stopping' ? (
         <>
           <button
             onClick={() => setShowKillConfirm(true)}
             className="btn btn-danger"
+            disabled={showKillConfirm}
           >
-            KILL
+            Force Stop
           </button>
 
           {showKillConfirm && (
@@ -94,4 +122,4 @@ const ServerControl = ({ server, onStatusChange }) => {
   );
 };
 
-export default ServerControl; 
+export default ServerControl;
